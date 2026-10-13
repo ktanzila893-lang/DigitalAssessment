@@ -1,0 +1,903 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Community School Assessment — Ledger</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Zilla+Slab:wght@400;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#1F2A24;
+    --forest:#1B4B43;
+    --forest-dark:#123833;
+    --forest-tint:#DCE8E1;
+    --gold:#C9971A;
+    --gold-light:#E8C558;
+    --paper:#FAF6EC;
+    --paper-dim:#F1EBDA;
+    --line:#D9CFAE;
+    --brick:#A8442C;
+    --amber:#B87A15;
+    --leaf:#3F7D58;
+    --radius:6px;
+    --shadow: 0 1px 0 rgba(0,0,0,.04), 0 8px 24px rgba(18,56,51,.08);
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{margin:0; background:var(--paper-dim); color:var(--ink); font-family:'Inter',sans-serif; -webkit-font-smoothing:antialiased;}
+  ::selection{background:var(--gold-light);}
+  a{color:inherit;}
+  :focus-visible{outline:3px solid var(--gold); outline-offset:2px;}
+  button{font-family:inherit;}
+  input,textarea{font-family:inherit;}
+  .hidden{display:none !important;}
+
+  .ledgerbar{
+    background:var(--forest); color:var(--forest-tint);
+    font-family:'IBM Plex Mono',monospace; font-size:.72rem; letter-spacing:.08em; text-transform:uppercase;
+    padding:8px 20px; display:flex; justify-content:space-between; flex-wrap:wrap; gap:6px; align-items:center;
+  }
+  .ledgerbar .who{display:flex; align-items:center; gap:12px;}
+  .ledgerbar button.signout{
+    background:none; border:1px solid rgba(232,197,88,.5); color:var(--gold-light);
+    font-family:'IBM Plex Mono',monospace; font-size:.68rem; padding:4px 10px; border-radius:2px; cursor:pointer;
+  }
+  .ledgerbar button.signout:hover{border-color:var(--gold-light); background:rgba(232,197,88,.1);}
+
+  /* ---------- login ---------- */
+  .login-wrap{
+    min-height:calc(100vh - 34px);
+    background:
+      radial-gradient(ellipse at 15% -10%, rgba(232,197,88,.18), transparent 55%),
+      var(--forest);
+    display:flex; align-items:center; justify-content:center; padding:40px 20px;
+  }
+  .login-card{
+    background:var(--paper); border-radius:10px; box-shadow:var(--shadow);
+    width:100%; max-width:480px; padding:38px clamp(20px,5vw,44px) 34px; position:relative; overflow:hidden;
+  }
+  .login-card::before{content:""; position:absolute; left:0; top:0; bottom:0; width:6px; background:var(--forest);}
+  .eyebrow{
+    font-family:'IBM Plex Mono',monospace; font-size:.72rem; letter-spacing:.14em; text-transform:uppercase;
+    color:var(--amber); display:flex; align-items:center; gap:10px; margin-bottom:14px;
+  }
+  .eyebrow::before{content:""; width:26px;height:1px; background:var(--amber); display:inline-block;}
+  .login-card h1{font-family:'Zilla Slab',serif; font-size:1.7rem; margin:0 0 8px; color:var(--forest-dark);}
+  .login-card p.sub{color:#5B6058; line-height:1.55; margin:0 0 26px; font-size:.95rem;}
+
+  .role-toggle{display:flex; gap:10px; margin-bottom:26px;}
+  .role-btn{
+    flex:1; border:1.5px solid var(--line); background:var(--paper); border-radius:6px;
+    padding:14px 10px; cursor:pointer; text-align:left; transition:border-color .15s, background .15s;
+  }
+  .role-btn .rt{font-family:'IBM Plex Mono',monospace; font-size:.66rem; letter-spacing:.08em; text-transform:uppercase; color:#8A8F81; display:block; margin-bottom:4px;}
+  .role-btn .rn{font-weight:700; color:var(--ink); font-size:.98rem;}
+  .role-btn.active{border-color:var(--forest); background:var(--forest-tint);}
+  .role-btn:hover{border-color:var(--gold);}
+
+  .field{margin-bottom:16px;}
+  .field label{display:block; font-family:'IBM Plex Mono',monospace; font-size:.7rem; letter-spacing:.06em; text-transform:uppercase; color:#767C71; margin-bottom:6px;}
+  .field input{
+    width:100%; border:1.5px solid var(--line); border-radius:4px; padding:11px 12px; font-size:.95rem;
+    background:#fff; color:var(--ink);
+  }
+  .field input:focus{border-color:var(--forest);}
+  .login-err{
+    font-family:'IBM Plex Mono',monospace; font-size:.76rem; color:var(--brick);
+    background:#F6E7E1; border:1px solid #E3C1B4; border-radius:6px; padding:9px 12px; margin-bottom:14px;
+  }
+  .btn{
+    font-weight:600; font-size:.92rem; border-radius:3px; border:1.5px solid transparent;
+    padding:12px 22px; cursor:pointer; transition:transform .12s ease, background .15s ease, color .15s ease, border-color .15s ease;
+  }
+  .btn:active{transform:translateY(1px);}
+  .btn-primary{background:var(--gold); color:var(--forest-dark); border-color:var(--gold); width:100%;}
+  .btn-primary:hover{background:var(--gold-light);}
+  .btn-outline{background:transparent; color:var(--forest); border-color:var(--forest);}
+  .btn-outline:hover{background:var(--forest-tint);}
+  .btn-danger{background:transparent; color:var(--brick); border-color:var(--brick); font-size:.78rem; padding:6px 12px;}
+  .btn-danger:hover{background:#F6E7E1;}
+  .login-note{font-family:'IBM Plex Mono',monospace; font-size:.68rem; color:#9AA098; margin-top:18px; line-height:1.5;}
+
+  /* ---------- hero (student) ---------- */
+  .hero{
+    background: radial-gradient(ellipse at 15% -10%, rgba(232,197,88,.18), transparent 55%), var(--forest);
+    color:var(--paper); padding:48px 20px 64px; position:relative; overflow:hidden;
+  }
+  .hero-inner{max-width:900px; margin:0 auto; position:relative;}
+  .hero h1{font-family:'Zilla Slab',serif; font-weight:700; font-size:clamp(1.9rem,4.4vw,3rem); line-height:1.08; margin:0 0 16px; max-width:14ch;}
+  .hero p{font-size:1.02rem; line-height:1.6; max-width:56ch; color:#E7EEE9; margin:0 0 26px;}
+  .cta-row{display:flex; gap:14px; flex-wrap:wrap; align-items:center;}
+  .btn-ghost{background:transparent; color:var(--paper); border-color:rgba(250,246,236,.45);}
+  .btn-ghost:hover{border-color:var(--paper);}
+
+  /* ---------- tab nav (student assessment) ---------- */
+  .tabnav{position:sticky; top:0; z-index:20; background:var(--paper); border-bottom:1px solid var(--line); box-shadow:var(--shadow);}
+  .tabnav-inner{max-width:960px; margin:0 auto; display:flex; overflow-x:auto; scrollbar-width:none;}
+  .tabnav-inner::-webkit-scrollbar{display:none;}
+  .tab{
+    flex:0 0 auto; font-family:'IBM Plex Mono',monospace; font-size:.74rem; letter-spacing:.04em;
+    background:none; border:none; padding:16px 18px 13px; color:#6B7268; cursor:pointer;
+    border-bottom:3px solid transparent; white-space:nowrap; display:flex; align-items:center; gap:8px;
+  }
+  .tab .num{width:18px;height:18px; border-radius:50%; border:1px solid currentColor; display:inline-flex;align-items:center;justify-content:center; font-size:.62rem;}
+  .tab.done .num{background:var(--leaf); border-color:var(--leaf); color:#fff;}
+  .tab.active{color:var(--forest); border-bottom-color:var(--gold);}
+  .tab:hover{color:var(--forest);}
+
+  main{max-width:960px; margin:0 auto; padding:40px 20px 90px;}
+  .sheet{display:none;}
+  .sheet.active{display:block; animation:rise .35s ease;}
+  @keyframes rise{from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:none;}}
+
+  .sheet-head{display:flex; justify-content:space-between; align-items:flex-end; gap:20px; border-bottom:2px solid var(--forest); padding-bottom:14px; margin-bottom:8px; flex-wrap:wrap;}
+  .sheet-head h2{font-family:'Zilla Slab',serif; font-size:1.55rem; margin:0; color:var(--forest-dark);}
+  .sheet-head .tally{font-family:'IBM Plex Mono',monospace; font-size:.78rem; color:var(--amber); white-space:nowrap;}
+  .sheet-desc{color:#495049; line-height:1.6; margin:14px 0 28px; max-width:65ch;}
+
+  .row{border-bottom:1px dashed var(--line); padding:20px 0;}
+  .row:first-of-type{border-top:1px dashed var(--line);}
+  .row-label{display:flex; gap:12px; align-items:baseline; margin-bottom:14px;}
+  .row-index{font-family:'IBM Plex Mono',monospace; color:var(--gold); font-weight:600; font-size:.85rem;}
+  .row-text{font-size:1rem; line-height:1.5; color:var(--ink); font-weight:500;}
+
+  .scale{display:grid; grid-template-columns:repeat(4,1fr); gap:8px;}
+  .scale label{position:relative; border:1.5px solid var(--line); border-radius:var(--radius); background:var(--paper); padding:10px 8px 9px; text-align:center; cursor:pointer; transition:border-color .15s ease, background .15s ease;}
+  .scale input{position:absolute; opacity:0; inset:0; margin:0; cursor:pointer;}
+  .scale .lvl{display:block; font-family:'IBM Plex Mono',monospace; font-size:.68rem; color:#8A8F81; margin-bottom:4px;}
+  .scale .lbl{display:block; font-size:.82rem; font-weight:600; color:var(--ink);}
+  .scale label:hover{border-color:var(--gold);}
+  .scale label:has(input:checked){border-color:var(--forest); background:var(--forest-tint);}
+  .scale label:has(input:checked) .lbl{color:var(--forest-dark);}
+  .scale label:has(input:checked) .lvl{color:var(--forest);}
+
+  .sheet-foot{display:flex; justify-content:space-between; align-items:center; margin-top:20px; gap:12px; flex-wrap:wrap;}
+  .hint{font-size:.82rem; color:#767C71; font-family:'IBM Plex Mono',monospace;}
+
+  .report{background:var(--paper); border:1px solid var(--line); border-radius:8px; box-shadow:var(--shadow); padding:32px clamp(18px,4vw,44px) 38px; position:relative; overflow:hidden;}
+  .report::before{content:""; position:absolute; left:0; top:0; bottom:0; width:6px; background:var(--forest);}
+  .report-top{display:flex; justify-content:space-between; align-items:flex-start; gap:24px; flex-wrap:wrap; border-bottom:1px solid var(--line); padding-bottom:24px; margin-bottom:24px;}
+  .report-title{font-family:'Zilla Slab',serif; font-size:1.4rem; color:var(--forest-dark); margin:0 0 6px;}
+  .report-sub{font-family:'IBM Plex Mono',monospace; font-size:.76rem; color:#767C71;}
+  .grade-stamp{width:96px;height:96px; border-radius:50%; border:3px double var(--tier-color,var(--forest)); display:flex; flex-direction:column; align-items:center; justify-content:center; transform:rotate(-6deg); flex:0 0 auto;}
+  .grade-stamp .g{font-family:'Zilla Slab',serif; font-weight:700; font-size:1.7rem; color:var(--tier-color,var(--forest)); line-height:1;}
+  .grade-stamp .t{font-family:'IBM Plex Mono',monospace; font-size:.54rem; letter-spacing:.06em; text-transform:uppercase; color:var(--tier-color,var(--forest)); margin-top:4px; text-align:center; max-width:76px;}
+
+  .bars{display:flex; flex-direction:column; gap:16px; margin-bottom:28px;}
+  .bar-top{display:flex; justify-content:space-between; font-size:.85rem; margin-bottom:6px;}
+  .bar-name{font-weight:600; color:var(--ink);}
+  .bar-score{font-family:'IBM Plex Mono',monospace; color:#767C71; font-size:.76rem;}
+  .bar-track{height:10px; background:var(--paper-dim); border:1px solid var(--line); border-radius:20px; overflow:hidden;}
+  .bar-fill{height:100%; border-radius:20px; transition:width .6s ease; background:var(--forest);}
+
+  .remarks{background:var(--paper-dim); border:1px dashed var(--line); border-radius:6px; padding:20px 22px; margin-bottom:8px;}
+  .remarks h3{font-family:'IBM Plex Mono',monospace; font-size:.68rem; letter-spacing:.1em; text-transform:uppercase; color:var(--gold); margin:0 0 10px;}
+  .remarks p{margin:0; line-height:1.65; color:var(--ink); font-size:.96rem;}
+
+  .report-actions{display:flex; gap:12px; margin-top:24px; flex-wrap:wrap; align-items:center;}
+  .incomplete-note{font-family:'IBM Plex Mono',monospace; font-size:.76rem; color:var(--brick); background:#F6E7E1; border:1px solid #E3C1B4; border-radius:6px; padding:11px 16px; margin-bottom:22px;}
+  .submitted-note{font-family:'IBM Plex Mono',monospace; font-size:.78rem; color:var(--leaf); background:#E7F1EA; border:1px solid #BFDCC9; border-radius:6px; padding:11px 16px; margin-bottom:22px;}
+
+  /* ---------- admin ---------- */
+  .admin-wrap{max-width:1000px; margin:0 auto; padding:36px 20px 90px;}
+  .admin-head{display:flex; justify-content:space-between; align-items:flex-end; gap:16px; flex-wrap:wrap; margin-bottom:8px;}
+  .admin-head h1{font-family:'Zilla Slab',serif; font-size:1.9rem; margin:0; color:var(--forest-dark);}
+  .admin-head p{color:#5B6058; margin:6px 0 0;}
+  .admin-tabs{display:flex; gap:6px; margin:28px 0 26px; border-bottom:1px solid var(--line);}
+  .admin-tab{background:none; border:none; padding:10px 6px; margin-right:18px; font-family:'IBM Plex Mono',monospace; font-size:.78rem; letter-spacing:.04em; color:#6B7268; cursor:pointer; border-bottom:3px solid transparent;}
+  .admin-tab.active{color:var(--forest); border-bottom-color:var(--gold);}
+  .admin-panel{display:none;}
+  .admin-panel.active{display:block; animation:rise .3s ease;}
+
+  .qcard{background:var(--paper); border:1px solid var(--line); border-radius:8px; box-shadow:var(--shadow); padding:22px clamp(16px,3vw,30px) 26px; margin-bottom:22px;}
+  .qcard-top{display:flex; gap:14px; align-items:flex-start; margin-bottom:16px;}
+  .qcard-num{font-family:'IBM Plex Mono',monospace; color:var(--gold); font-weight:700; font-size:1rem; padding-top:10px;}
+  .qcard-fields{flex:1; display:flex; flex-direction:column; gap:10px;}
+  .qcard-fields input.pname{font-family:'Zilla Slab',serif; font-size:1.15rem; font-weight:600; border:1px solid transparent; border-bottom:1.5px solid var(--line); background:transparent; padding:6px 2px; color:var(--forest-dark);}
+  .qcard-fields input.pname:focus{border-bottom-color:var(--forest);}
+  .qcard-fields textarea.pdesc{border:1px solid var(--line); border-radius:4px; padding:9px 10px; font-size:.88rem; color:#495049; resize:vertical; min-height:44px;}
+  .qcard button.del-pillar{align-self:flex-start; background:none; border:none; color:var(--brick); font-family:'IBM Plex Mono',monospace; font-size:.72rem; cursor:pointer; padding:8px 4px;}
+  .qitem{display:flex; gap:10px; align-items:center; padding:9px 0; border-top:1px dashed var(--line);}
+  .qitem input{flex:1; border:1px solid var(--line); border-radius:4px; padding:9px 10px; font-size:.9rem;}
+  .qitem input:focus{border-color:var(--forest);}
+  .qitem button{background:none; border:none; color:var(--brick); font-size:1rem; cursor:pointer; padding:4px 6px; line-height:1;}
+  .qitem button:hover{color:#7a2f1e;}
+  .add-item{background:none; border:1px dashed var(--line); border-radius:4px; color:var(--forest); font-family:'IBM Plex Mono',monospace; font-size:.76rem; padding:8px 12px; margin-top:10px; cursor:pointer; width:100%;}
+  .add-item:hover{border-color:var(--forest); background:var(--forest-tint);}
+  .admin-actions{display:flex; gap:12px; align-items:center; margin:26px 0 8px; flex-wrap:wrap;}
+  .save-msg{font-family:'IBM Plex Mono',monospace; font-size:.78rem; color:var(--leaf);}
+
+  .res-toolbar{display:flex; justify-content:space-between; align-items:center; margin-bottom:18px; gap:12px; flex-wrap:wrap;}
+  .res-count{font-family:'IBM Plex Mono',monospace; font-size:.8rem; color:#767C71;}
+  .res-table{width:100%; border-collapse:collapse; background:var(--paper); border:1px solid var(--line); border-radius:8px; overflow:hidden; box-shadow:var(--shadow);}
+  .res-table th{text-align:left; font-family:'IBM Plex Mono',monospace; font-size:.68rem; letter-spacing:.05em; text-transform:uppercase; color:#767C71; padding:12px 14px; border-bottom:1px solid var(--line); background:var(--paper-dim);}
+  .res-table td{padding:13px 14px; border-bottom:1px solid var(--line); font-size:.88rem; vertical-align:top;}
+  .res-table tr:last-child td{border-bottom:none;}
+  .res-grade{display:inline-block; font-family:'IBM Plex Mono',monospace; font-weight:700; padding:2px 8px; border-radius:3px; font-size:.78rem;}
+  .res-toggle{background:none; border:1px solid var(--line); border-radius:4px; font-family:'IBM Plex Mono',monospace; font-size:.72rem; padding:4px 9px; cursor:pointer; color:var(--forest);}
+  .res-toggle:hover{border-color:var(--forest);}
+  .res-detail{padding:16px 14px 20px; background:var(--paper-dim);}
+  .res-detail .bars{margin-bottom:0;}
+  .answers{margin-top:22px; padding-top:18px; border-top:1px solid var(--line);}
+  .ans-pillar{margin-bottom:16px;}
+  .ans-pillar:last-child{margin-bottom:0;}
+  .ans-pillar-name{font-family:'IBM Plex Mono',monospace; font-size:.72rem; letter-spacing:.05em; text-transform:uppercase; color:var(--forest); margin:0 0 8px;}
+  .ans-row{display:flex; gap:10px; align-items:baseline; padding:7px 0; border-top:1px dashed var(--line); font-size:.86rem;}
+  .ans-row:first-of-type{border-top:none;}
+  .ans-idx{font-family:'IBM Plex Mono',monospace; color:var(--gold); font-size:.76rem; flex:0 0 auto;}
+  .ans-text{flex:1; color:var(--ink); line-height:1.45;}
+  .ans-score{font-family:'IBM Plex Mono',monospace; font-size:.76rem; font-weight:600; white-space:nowrap; flex:0 0 auto;}
+  .empty-note{font-family:'IBM Plex Mono',monospace; font-size:.85rem; color:#8A8F81; padding:30px 0; text-align:center;}
+
+  footer{text-align:center; padding:30px 20px 50px; font-family:'IBM Plex Mono',monospace; font-size:.72rem; color:#8A8F81;}
+
+  @media (max-width:640px){
+    .scale{grid-template-columns:repeat(2,1fr);}
+    .report-top{flex-direction:column;}
+    .res-table{display:block; overflow-x:auto;}
+  }
+  @media print{
+    .ledgerbar,.tabnav,.hero .cta-row,.btn,.report-actions{display:none !important;}
+    .hero{padding:20px;}
+    .sheet{display:none !important;}
+    #sheet-results{display:block !important;}
+    body{background:#fff;}
+  }
+</style>
+</head>
+<body>
+
+<div class="ledgerbar">
+  <span>Community Schools Initiative — Self-Assessment</span>
+  <span class="who" id="whoBar"></span>
+</div>
+
+<!-- ===================== LOGIN ===================== -->
+<div id="view-login" class="login-wrap">
+  <div class="login-card">
+    <p class="eyebrow">Digital Assessment Tool</p>
+    <h1>Community School Ledger</h1>
+    <p class="sub">Sign in to rate a school's readiness, or as staff, to manage the questions and review submitted assessments.</p>
+
+    <div class="role-toggle">
+      <button class="role-btn active" id="roleBtnStudent" onclick="setRole('student')">
+        <span class="rt">Access</span><span class="rn">Student / School Team</span>
+      </button>
+      <button class="role-btn" id="roleBtnAdmin" onclick="setRole('admin')">
+        <span class="rt">Access</span><span class="rn">Staff Admin</span>
+      </button>
+    </div>
+
+    <div id="loginErr" class="login-err hidden"></div>
+
+    <div id="studentFields">
+      <div class="field"><label for="stuName">Your name</label><input id="stuName" type="text" placeholder="e.g. Priya Nair"></div>
+      <div class="field"><label for="stuSchool">School / team</label><input id="stuSchool" type="text" placeholder="e.g. Lakeview Elementary"></div>
+      <button class="btn btn-primary" onclick="loginStudent()">Start assessment</button>
+    </div>
+
+    <div id="adminFields" class="hidden">
+      <div class="field"><label for="admPass">Admin password</label><input id="admPass" type="password" placeholder="••••••••" onkeydown="if(event.key==='Enter')loginAdmin()"></div>
+      <button class="btn btn-primary" onclick="loginAdmin()">Sign in as admin</button>
+      <p class="login-note">Default password: <strong>communityschools2026</strong> — change ADMIN_PASSWORD in the code before real use. This is a lightweight gate, not secure authentication.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== STUDENT APP ===================== -->
+<div id="view-student" class="hidden">
+  <header class="hero">
+    <div class="hero-inner">
+      <p class="eyebrow" style="color:var(--gold-light)"><span></span></p>
+      <h1>Community School Readiness Ledger</h1>
+      <p>Rate each indicator honestly. Your report is generated automatically once every pillar is complete, and can be submitted for your team's records.</p>
+      <div class="cta-row">
+        <button class="btn btn-primary" onclick="goTo(0)">Begin the assessment</button>
+        <button class="btn btn-ghost" onclick="goTo('results')">Jump to report</button>
+      </div>
+    </div>
+  </header>
+  <nav class="tabnav"><div class="tabnav-inner" id="tabnav"></div></nav>
+  <main id="main"></main>
+</div>
+
+<!-- ===================== ADMIN APP ===================== -->
+<div id="view-admin" class="hidden">
+  <div class="admin-wrap">
+    <div class="admin-head">
+      <div>
+        <h1>Staff Admin</h1>
+        <p>Edit the assessment questions and review every submitted ledger.</p>
+      </div>
+    </div>
+    <div class="admin-tabs">
+      <button class="admin-tab active" id="atab-q" onclick="setAdminTab('q')">Manage Questions</button>
+      <button class="admin-tab" id="atab-r" onclick="setAdminTab('r')">Results</button>
+    </div>
+
+    <div class="admin-panel active" id="apanel-q">
+      <div id="qEditor"></div>
+      <button class="add-item" style="border-style:solid" onclick="addPillar()">+ Add pillar</button>
+      <div class="admin-actions">
+        <button class="btn btn-primary" style="width:auto" onclick="saveQuestions()">Save changes</button>
+        <span class="save-msg" id="saveMsg"></span>
+      </div>
+    </div>
+
+    <div class="admin-panel" id="apanel-r">
+      <div class="res-toolbar">
+        <span class="res-count" id="resCount"></span>
+        <button class="btn btn-outline" onclick="exportCSV()">Export CSV</button>
+      </div>
+      <div id="resultsWrap"></div>
+    </div>
+  </div>
+</div>
+
+<footer>Community School Readiness Ledger — a self-assessment tool. Not affiliated with any single district or standards body.</footer>
+
+// Import the functions you need from the SDKs you need
+import { initializeApp } from "firebase/app";
+// TODO: Add SDKs for Firebase products that you want to use
+// https://firebase.google.com/docs/web/setup#available-libraries
+
+// Your web app's Firebase configuration
+const firebaseConfig = {
+  apiKey: "AIzaSyClgYssAdlnNIBaYdd6aW1koXNARpAp7PM",
+  authDomain: "digital-class-ce616.firebaseapp.com",
+  projectId: "digital-class-ce616",
+  storageBucket: "digital-class-ce616.firebasestorage.app",
+  messagingSenderId: "326613167796",
+  appId: "1:326613167796:web:514ab96eb16b34d8e971e1"
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+
+<script>
+const ADMIN_PASSWORD = "communityschools2026";
+
+// ---- Firebase config ----
+// Firebase console → Project settings (gear icon) → General tab →
+// "Your apps" → SDK setup and configuration → paste the object shown there.
+const firebaseConfig = {
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+  projectId: "YOUR_PROJECT_ID",
+  storageBucket: "YOUR_PROJECT_ID.appspot.com",
+  messagingSenderId: "YOUR_SENDER_ID",
+  appId: "YOUR_APP_ID"
+};
+
+const DEFAULT_PILLARS = [
+  { name:"Integrated Student Supports",
+    desc:"How systematically the school connects students and families to the health, mental-health, and social services they need to be ready to learn.",
+    items:[
+      "On-site or coordinated access to physical and mental health services",
+      "A systematic process exists to identify students' academic and non-academic needs",
+      "A case-management or referral system connects students and families to services",
+      "Formal partnerships are in place with health providers, counseling agencies, or social services",
+      "Attendance and early-warning data are used to trigger support interventions"
+    ]},
+  { name:"Expanded & Enriched Learning Time",
+    desc:"Whether learning extends meaningfully beyond the bell — before, after, and during the summer — and connects back to the core school day.",
+    items:[
+      "Structured before- or after-school programming is available to students",
+      "Summer learning or enrichment opportunities are offered",
+      "Real-world, project-based, or experiential learning is built into the school day",
+      "Arts, sports, or enrichment partners deliver programming on campus",
+      "Extended learning time is aligned with — not separate from — the day's curriculum"
+    ]},
+  { name:"Family & Community Engagement",
+    desc:"How genuinely families and the surrounding community are treated as partners, not audiences, in the life of the school.",
+    items:[
+      "Families have a formal voice in school decisions, such as a council or leadership team",
+      "Staff conduct home visits or maintain two-way family communication routines",
+      "School space is used by the community outside of school hours",
+      "Culturally responsive practices welcome the full diversity of families served",
+      "Local organizations, businesses, or agencies are active partners in school life"
+    ]},
+  { name:"Collaborative Leadership & Practice",
+    desc:"Whether the school has the structure, staffing, and shared vision to hold all of the above together over time.",
+    items:[
+      "A dedicated community school coordinator or lead manages partnerships",
+      "A shared leadership structure includes staff, families, students, and partners",
+      "Staff have regular protected time for collaborative planning and reflection",
+      "Data on student outcomes and program participation is reviewed on a regular cycle",
+      "A clear, shared vision for the community school guides day-to-day decisions"
+    ]}
+];
+
+const LEVELS = [
+  {label:"Not yet", tag:"0"},
+  {label:"Emerging", tag:"1"},
+  {label:"Developing", tag:"2"},
+  {label:"Established", tag:"3"}
+];
+
+const TIERS = [
+  {max:0.25, grade:"F", name:"Just Beginning", color:"#A8442C"},
+  {max:0.50, grade:"C", name:"Emerging", color:"#B87A15"},
+  {max:0.75, grade:"B", name:"Developing", color:"#8A8F1E"},
+  {max:1.01, grade:"A", name:"Established", color:"#1B4B43"}
+];
+
+const ADVICE = [
+  "Focus energy on coordinating health, counseling, and referral services so no student's needs go unseen.",
+  "Build out structured before/after-school and summer programming, and tie it back to the core curriculum.",
+  "Invest in family voice — a leadership council, home visits, and a genuinely welcoming front office go a long way.",
+  "Name a coordinator and set a shared leadership rhythm so partnerships don't run on goodwill alone."
+];
+
+let PILLARS = JSON.parse(JSON.stringify(DEFAULT_PILLARS));
+let state = [];
+let currentRole = null; // 'student' | 'admin'
+let currentStudent = {name:"", school:""};
+let submitted = false;
+
+function resetState(){
+  state = PILLARS.map(p => p.items.map(() => null));
+}
+
+/* ---------------- firebase init ---------------- */
+let db, fb;
+const firebaseReady = (async function initFirebase(){
+  try{
+    const appMod = await import("https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js");
+    const fsMod = await import("https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js");
+    const app = appMod.initializeApp(firebaseConfig);
+    db = fsMod.getFirestore(app);
+    fb = fsMod;
+  }catch(e){
+    console.error("Firebase failed to initialize — check firebaseConfig.", e);
+  }
+})();
+
+/* ---------------- storage helpers (Firestore) ----------------
+   Data model:
+   - config/questions   (single doc)  { pillars: [...] }
+   - results/{autoId}   (one doc per submitted assessment)
+------------------------------------------------------------- */
+async function loadQuestions(){
+  await firebaseReady;
+  try{
+    const snap = await fb.getDoc(fb.doc(db,"config","questions"));
+    if(snap.exists()){
+      const data = snap.data();
+      if(Array.isArray(data.pillars) && data.pillars.length) PILLARS = data.pillars;
+    }
+  }catch(e){ console.error("Could not load questions:", e); }
+  resetState();
+}
+async function saveQuestionsToStorage(){
+  await firebaseReady;
+  await fb.setDoc(fb.doc(db,"config","questions"), {pillars: PILLARS});
+}
+async function loadResults(){
+  await firebaseReady;
+  try{
+    const snap = await fb.getDocs(fb.collection(db,"results"));
+    return snap.docs.map(d => ({id:d.id, ...d.data()}));
+  }catch(e){ console.error("Could not load results:", e); return []; }
+}
+
+/* ---------------- login ---------------- */
+function setRole(role){
+  currentRole = role;
+  document.getElementById('roleBtnStudent').classList.toggle('active', role==='student');
+  document.getElementById('roleBtnAdmin').classList.toggle('active', role==='admin');
+  document.getElementById('studentFields').classList.toggle('hidden', role!=='student');
+  document.getElementById('adminFields').classList.toggle('hidden', role!=='admin');
+  document.getElementById('loginErr').classList.add('hidden');
+}
+setRole('student');
+
+function showErr(msg){
+  const e = document.getElementById('loginErr');
+  e.textContent = msg; e.classList.remove('hidden');
+}
+
+async function loginStudent(){
+  const name = document.getElementById('stuName').value.trim();
+  const school = document.getElementById('stuSchool').value.trim();
+  if(!name){ showErr("Enter your name to continue."); return; }
+  currentStudent = {name, school};
+  await loadQuestions();
+  document.getElementById('view-login').classList.add('hidden');
+  document.getElementById('view-student').classList.remove('hidden');
+  buildNav(); buildSheets(); updateTally(); goTo(0);
+  renderWhoBar();
+}
+
+async function loginAdmin(){
+  const pass = document.getElementById('admPass').value;
+  if(pass !== ADMIN_PASSWORD){ showErr("Incorrect password."); return; }
+  await loadQuestions();
+  document.getElementById('view-login').classList.add('hidden');
+  document.getElementById('view-admin').classList.remove('hidden');
+  buildQEditor();
+  await refreshResults();
+  renderWhoBar();
+}
+
+function signOut(){
+  currentRole = null; submitted = false;
+  document.getElementById('view-student').classList.add('hidden');
+  document.getElementById('view-admin').classList.add('hidden');
+  document.getElementById('view-login').classList.remove('hidden');
+  document.getElementById('stuName').value=""; document.getElementById('stuSchool').value="";
+  document.getElementById('admPass').value="";
+  document.getElementById('whoBar').innerHTML = "";
+}
+
+function renderWhoBar(){
+  const bar = document.getElementById('whoBar');
+  if(currentRole==='student'){
+    bar.innerHTML = `<span>${currentStudent.name}${currentStudent.school ? ' · '+currentStudent.school : ''}</span><button class="signout" onclick="signOut()">Sign out</button>`;
+  } else if(currentRole==='admin'){
+    bar.innerHTML = `<span>Signed in as Admin</span><button class="signout" onclick="signOut()">Sign out</button>`;
+  }
+}
+
+/* ---------------- scoring ---------------- */
+function tierFor(score, max){
+  const pct = max > 0 ? score / max : 0;
+  for(const t of TIERS){ if(pct <= t.max) return t; }
+  return TIERS[TIERS.length-1];
+}
+function pillarMax(pi){ return PILLARS[pi].items.length * 3; }
+function pillarScoreOf(st, pi){ return st[pi].reduce((s,v)=> s + (v||0), 0); }
+
+/* ---------------- student: nav + sheets ---------------- */
+function buildNav(){
+  const nav = document.getElementById('tabnav');
+  nav.innerHTML = '';
+  PILLARS.forEach((p,i)=>{
+    const b = document.createElement('button');
+    b.className = 'tab'; b.id = 'tab-'+i;
+    b.innerHTML = `<span class="num">${i+1}</span> ${p.name}`;
+    b.onclick = ()=>goTo(i);
+    nav.appendChild(b);
+  });
+  const r = document.createElement('button');
+  r.className='tab'; r.id='tab-results';
+  r.innerHTML = `<span class="num">✓</span> Report`;
+  r.onclick = ()=>goTo('results');
+  nav.appendChild(r);
+}
+
+function buildSheets(){
+  const main = document.getElementById('main');
+  main.innerHTML='';
+  PILLARS.forEach((p,pi)=>{
+    const sec = document.createElement('section');
+    sec.className='sheet'; sec.id='sheet-'+pi;
+    sec.innerHTML = `
+      <div class="sheet-head">
+        <h2>${String(pi+1).padStart(2,'0')} — ${p.name}</h2>
+        <span class="tally" id="tally-${pi}"></span>
+      </div>
+      <p class="sheet-desc">${p.desc || ''}</p>
+      ${p.items.map((text,ii)=>`
+        <div class="row">
+          <div class="row-label">
+            <span class="row-index">${String(pi+1).padStart(2,'0')}.${ii+1}</span>
+            <span class="row-text">${text}</span>
+          </div>
+          <div class="scale" role="radiogroup" aria-label="${text}">
+            ${LEVELS.map((lv,li)=>`
+              <label>
+                <input type="radio" name="p${pi}i${ii}" value="${li}" onchange="setScore(${pi},${ii},${li})">
+                <span class="lvl">${lv.tag}</span>
+                <span class="lbl">${lv.label}</span>
+              </label>
+            `).join('')}
+          </div>
+        </div>
+      `).join('')}
+      <div class="sheet-foot">
+        <span class="hint">Rate every indicator, then move on.</span>
+        <button class="btn btn-primary" style="width:auto" onclick="goTo(${pi+1 < PILLARS.length ? pi+1 : "'results'"})">
+          ${pi+1 < PILLARS.length ? 'Next pillar →' : 'View report →'}
+        </button>
+      </div>
+    `;
+    main.appendChild(sec);
+  });
+  const res = document.createElement('section');
+  res.className='sheet'; res.id='sheet-results';
+  main.appendChild(res);
+}
+
+function setScore(pi,ii,val){
+  state[pi][ii] = val;
+  updateTally();
+  renderResults();
+}
+
+function updateTally(){
+  let total = 0, totalItems = 0;
+  PILLARS.forEach((p,pi)=>{
+    const answered = state[pi].filter(v=>v!==null).length;
+    const el = document.getElementById('tally-'+pi);
+    if(el) el.textContent = `${answered} / ${p.items.length} rated`;
+    total += answered; totalItems += p.items.length;
+    const tb = document.getElementById('tab-'+pi);
+    if(tb) tb.classList.toggle('done', answered === p.items.length);
+  });
+}
+
+function renderResults(){
+  const totalItems = PILLARS.reduce((s,p)=>s+p.items.length,0);
+  const totalAnswered = state.flat().filter(v=>v!==null).length;
+  const totalScore = state.reduce((s,arr,pi)=> s + pillarScoreOf(state,pi), 0);
+  const maxScore = totalItems*3;
+  const tier = tierFor(totalScore, maxScore);
+
+  let bestIdx=0, worstIdx=0;
+  PILLARS.forEach((p,i)=>{
+    if(pillarScoreOf(state,i)/pillarMax(i) > pillarScoreOf(state,bestIdx)/pillarMax(bestIdx)) bestIdx=i;
+    if(pillarScoreOf(state,i)/pillarMax(i) < pillarScoreOf(state,worstIdx)/pillarMax(worstIdx)) worstIdx=i;
+  });
+
+  const incomplete = totalAnswered < totalItems;
+  const el = document.getElementById('sheet-results');
+  if(!el) return;
+  el.innerHTML = `
+    <div class="sheet-head">
+      <h2>Report — Readiness Summary</h2>
+      <span class="tally">${totalAnswered} / ${totalItems} rated</span>
+    </div>
+    <div class="report">
+      ${incomplete ? `<div class="incomplete-note">This report is based on ${totalAnswered} of ${totalItems} indicators. Finish rating every pillar for an accurate score.</div>` : ''}
+      ${submitted ? `<div class="submitted-note">Submitted to your school team's records. Thank you.</div>` : ''}
+      <div class="report-top">
+        <div>
+          <p class="report-title">Overall Readiness: ${tier.name}</p>
+          <p class="report-sub">Score ${totalScore} / ${maxScore} · ${currentStudent.name}${currentStudent.school ? ' · '+currentStudent.school : ''} · ${new Date().toLocaleDateString(undefined,{year:'numeric',month:'long',day:'numeric'})}</p>
+        </div>
+        <div class="grade-stamp" style="--tier-color:${tier.color}">
+          <span class="g">${tier.grade}</span><span class="t">${tier.name}</span>
+        </div>
+      </div>
+      <div class="bars">
+        ${PILLARS.map((p,i)=>{
+          const s = pillarScoreOf(state,i); const mx = pillarMax(i);
+          const pct = mx ? Math.round((s/mx)*100) : 0;
+          const t = tierFor(s,mx);
+          return `<div class="bar-row">
+            <div class="bar-top"><span class="bar-name">${p.name}</span><span class="bar-score">${s} / ${mx} · ${t.name}</span></div>
+            <div class="bar-track"><div class="bar-fill" style="width:${pct}%; background:${t.color}"></div></div>
+          </div>`;
+        }).join('')}
+      </div>
+      <div class="remarks">
+        <h3>Notes</h3>
+        <p>${totalAnswered === 0
+          ? "No indicators rated yet — begin with the first pillar to generate a report."
+          : `This school shows the greatest strength in <strong>${PILLARS[bestIdx].name}</strong> and would benefit most from focused attention on <strong>${PILLARS[worstIdx].name}</strong>. ${ADVICE[worstIdx % ADVICE.length]}`
+        }</p>
+      </div>
+      <div class="report-actions">
+        <button class="btn btn-primary" style="width:auto" ${incomplete||submitted?'disabled':''} onclick="submitAssessment()">${submitted ? 'Submitted ✓' : 'Submit to school team'}</button>
+        <button class="btn btn-outline" onclick="window.print()">Print report</button>
+        <button class="btn btn-outline" onclick="resetAll()">Start over</button>
+      </div>
+    </div>
+  `;
+}
+
+async function submitAssessment(){
+  const totalItems = PILLARS.reduce((s,p)=>s+p.items.length,0);
+  const totalScore = state.reduce((s,arr,pi)=> s + pillarScoreOf(state,pi), 0);
+  const maxScore = totalItems*3;
+  const tier = tierFor(totalScore, maxScore);
+  const record = {
+    name: currentStudent.name,
+    school: currentStudent.school,
+    timestamp: new Date().toISOString(),
+    totalScore, maxScore,
+    grade: tier.grade, tierName: tier.name,
+    pillars: PILLARS.map((p,i)=>({name:p.name, score:pillarScoreOf(state,i), max:pillarMax(i)})),
+    answers: PILLARS.map((p,pi)=>({pillar:p.name, items:p.items.map((text,ii)=>({text, score:state[pi][ii]}))}))
+  };
+  try{
+    await firebaseReady;
+    await fb.addDoc(fb.collection(db,"results"), record);
+    submitted = true;
+    renderResults();
+  }catch(e){
+    console.error(e);
+    alert("Could not submit right now — please try again.");
+  }
+}
+
+function goTo(target){
+  document.querySelectorAll('.sheet').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  if(target==='results'){
+    document.getElementById('sheet-results').classList.add('active');
+    document.getElementById('tab-results').classList.add('active');
+    renderResults();
+  } else {
+    document.getElementById('sheet-'+target).classList.add('active');
+    document.getElementById('tab-'+target).classList.add('active');
+  }
+  window.scrollTo({top: document.querySelector('.tabnav').offsetTop - 4, behavior:'smooth'});
+}
+
+function resetAll(){
+  resetState(); submitted = false;
+  document.querySelectorAll('.scale input').forEach(i=>i.checked=false);
+  updateTally(); goTo(0);
+}
+
+/* ---------------- admin: question editor ---------------- */
+function setAdminTab(tab){
+  document.getElementById('atab-q').classList.toggle('active', tab==='q');
+  document.getElementById('atab-r').classList.toggle('active', tab==='r');
+  document.getElementById('apanel-q').classList.toggle('active', tab==='q');
+  document.getElementById('apanel-r').classList.toggle('active', tab==='r');
+}
+
+function buildQEditor(){
+  const wrap = document.getElementById('qEditor');
+  wrap.innerHTML = PILLARS.map((p,pi)=>`
+    <div class="qcard">
+      <div class="qcard-top">
+        <span class="qcard-num">${String(pi+1).padStart(2,'0')}</span>
+        <div class="qcard-fields">
+          <input class="pname" value="${escAttr(p.name)}" oninput="PILLARS[${pi}].name=this.value">
+          <textarea class="pdesc" oninput="PILLARS[${pi}].desc=this.value">${p.desc||''}</textarea>
+        </div>
+        <button class="del-pillar" onclick="deletePillar(${pi})">Remove pillar ✕</button>
+      </div>
+      <div id="items-${pi}">
+        ${p.items.map((text,ii)=>`
+          <div class="qitem">
+            <input value="${escAttr(text)}" oninput="PILLARS[${pi}].items[${ii}]=this.value">
+            <button onclick="deleteItem(${pi},${ii})" title="Remove indicator">✕</button>
+          </div>
+        `).join('')}
+      </div>
+      <button class="add-item" onclick="addItem(${pi})">+ Add indicator</button>
+    </div>
+  `).join('');
+}
+
+function escAttr(s){ return String(s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;'); }
+
+function addItem(pi){
+  PILLARS[pi].items.push("New indicator — edit this text");
+  buildQEditor();
+}
+function deleteItem(pi,ii){
+  if(PILLARS[pi].items.length<=1){ alert("Each pillar needs at least one indicator."); return; }
+  PILLARS[pi].items.splice(ii,1);
+  buildQEditor();
+}
+function addPillar(){
+  PILLARS.push({name:"New Pillar", desc:"", items:["New indicator — edit this text"]});
+  buildQEditor();
+}
+function deletePillar(pi){
+  if(PILLARS.length<=1){ alert("At least one pillar is required."); return; }
+  if(!confirm(`Remove "${PILLARS[pi].name}"? This does not delete past results.`)) return;
+  PILLARS.splice(pi,1);
+  buildQEditor();
+}
+
+async function saveQuestions(){
+  await saveQuestionsToStorage();
+  const msg = document.getElementById('saveMsg');
+  msg.textContent = "Saved — students will see these questions next time they log in.";
+  setTimeout(()=>{ msg.textContent=""; }, 4000);
+}
+
+/* ---------------- admin: results ---------------- */
+async function refreshResults(){
+  const list = await loadResults();
+  list.sort((a,b)=> new Date(b.timestamp) - new Date(a.timestamp));
+  document.getElementById('resCount').textContent = `${list.length} submission${list.length===1?'':'s'}`;
+  const wrap = document.getElementById('resultsWrap');
+  if(!list.length){
+    wrap.innerHTML = `<div class="empty-note">No assessments submitted yet.</div>`;
+    return;
+  }
+  wrap.innerHTML = `
+    <table class="res-table">
+      <thead><tr><th>Name</th><th>School / Team</th><th>Date</th><th>Score</th><th>Grade</th><th></th><th></th></tr></thead>
+      <tbody>
+        ${list.map((r,idx)=>`
+          <tr>
+            <td>${r.name}</td>
+            <td>${r.school||'—'}</td>
+            <td>${new Date(r.timestamp).toLocaleDateString()}</td>
+            <td>${r.totalScore} / ${r.maxScore}</td>
+            <td><span class="res-grade" style="background:${gradeColor(r.grade)}22; color:${gradeColor(r.grade)}">${r.grade} · ${r.tierName}</span></td>
+            <td><button class="res-toggle" onclick="toggleDetail(${idx})">Details</button></td>
+            <td><button class="btn-danger" onclick="deleteResult('${r.id}')">Delete</button></td>
+          </tr>
+          <tr id="detail-${idx}" class="hidden"><td colspan="7"><div class="res-detail">
+            <div class="bars">
+              ${r.pillars.map(p=>{
+                const pct = p.max ? Math.round((p.score/p.max)*100) : 0;
+                const t = tierFor(p.score,p.max);
+                return `<div class="bar-row">
+                  <div class="bar-top"><span class="bar-name">${p.name}</span><span class="bar-score">${p.score} / ${p.max} · ${t.name}</span></div>
+                  <div class="bar-track"><div class="bar-fill" style="width:${pct}%; background:${t.color}"></div></div>
+                </div>`;
+              }).join('')}
+            </div>
+            ${r.answers ? `
+              <div class="answers">
+                ${r.answers.map((sec,si)=>`
+                  <div class="ans-pillar">
+                    <p class="ans-pillar-name">${String(si+1).padStart(2,'0')} — ${sec.pillar}</p>
+                    ${sec.items.map((it,ii)=>`
+                      <div class="ans-row">
+                        <span class="ans-idx">${String(si+1).padStart(2,'0')}.${ii+1}</span>
+                        <span class="ans-text">${it.text}</span>
+                        <span class="ans-score" style="color:${scoreColor(it.score)}">${it.score===null||it.score===undefined ? 'Not rated' : LEVELS[it.score].tag+' · '+LEVELS[it.score].label}</span>
+                      </div>
+                    `).join('')}
+                  </div>
+                `).join('')}
+              </div>
+            ` : ''}
+          </div></td></tr>
+        `).join('')}
+      </tbody>
+    </table>
+  `;
+  window.__resultsCache = list;
+}
+
+function gradeColor(g){
+  const t = TIERS.find(t=>t.grade===g);
+  return t ? t.color : '#1B4B43';
+}
+function scoreColor(score){
+  if(score===null || score===undefined) return '#8A8F81';
+  return ['#A8442C','#B87A15','#8A8F1E','#1B4B43'][score] || '#1B4B43';
+}
+
+function toggleDetail(idx){
+  document.getElementById('detail-'+idx).classList.toggle('hidden');
+}
+
+async function deleteResult(id){
+  if(!confirm("Delete this submission? This cannot be undone.")) return;
+  await firebaseReady;
+  try{
+    await fb.deleteDoc(fb.doc(db,"results", id));
+  }catch(e){
+    console.error(e);
+    alert("Could not delete this submission — please try again.");
+  }
+  await refreshResults();
+}
+
+function exportCSV(){
+  const list = window.__resultsCache || [];
+  if(!list.length){ alert("No results to export yet."); return; }
+  const headers = ["Name","School/Team","Date","Total Score","Max","Grade","Tier", ...PILLARS.map(p=>p.name)];
+  const rows = list.map(r=>{
+    const pillarScores = PILLARS.map(p=>{
+      const match = r.pillars.find(x=>x.name===p.name);
+      return match ? match.score : '';
+    });
+    return [r.name, r.school||'', new Date(r.timestamp).toLocaleString(), r.totalScore, r.maxScore, r.grade, r.tierName, ...pillarScores];
+  });
+  const csv = [headers, ...rows].map(row => row.map(v => `"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob = new Blob([csv], {type:'text/csv'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'community-school-results.csv';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+</script>
+</body>
+</html>
